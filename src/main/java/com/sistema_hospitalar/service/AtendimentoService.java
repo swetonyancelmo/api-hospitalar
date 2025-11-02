@@ -93,6 +93,7 @@ public class AtendimentoService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public AtendimentoMedicoDTO.Response registrarAvaliacaoMedica(String fichaId, AtendimentoMedicoDTO.Request dto){
         Usuario medico= (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
