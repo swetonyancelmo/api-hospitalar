@@ -2,6 +2,8 @@ package com.sistema_hospitalar.controller;
 
 import com.sistema_hospitalar.dto.FichaAtendimentoDTO;
 import com.sistema_hospitalar.dto.IniciarAtendimentoRequestDTO;
+import com.sistema_hospitalar.dto.TriagemResponseDTO;
+import com.sistema_hospitalar.dto.TriagemResquestDTO;
 import com.sistema_hospitalar.service.AtendimentoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/atendimentos")
@@ -38,5 +37,20 @@ public class AtendimentoController {
     public ResponseEntity<FichaAtendimentoDTO> iniciarAtendimento(@RequestBody @Valid IniciarAtendimentoRequestDTO dto){
         FichaAtendimentoDTO novaFicha = atendimentoService.iniciarAtendimento(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(novaFicha);
+    }
+
+    @PostMapping("/{fichaId}/triagem")
+    @PreAuthorize("hasRole('ENFERMEIRO')")
+    @Operation(summary = "Registra a triagem do paciente", description = "Usado pelo ENFERMEIRO para definir a prioridade de risco. Muda o status para AGUARDANDO_MEDICO.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Triagem registrada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Ficha não está aguardando triagem"),
+            @ApiResponse(responseCode = "404", description = "Ficha não encontrada")
+    })
+    public ResponseEntity<TriagemResponseDTO> registrarTriagem(
+            @PathVariable String fichaId,
+            @RequestBody @Valid TriagemResquestDTO dto) {
+        TriagemResponseDTO response = atendimentoService.registrarTriagem(fichaId, dto);
+        return ResponseEntity.ok(response);
     }
 }
