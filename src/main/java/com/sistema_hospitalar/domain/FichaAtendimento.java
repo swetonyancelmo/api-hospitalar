@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "fichas_atendimento")
@@ -39,6 +40,9 @@ public class FichaAtendimento {
 
     @OneToOne(mappedBy = "ficha", cascade = CascadeType.ALL)
     private Triagem triagem;
+
+    @OneToMany(mappedBy = "ficha", cascade = CascadeType.ALL)
+    private List<AtendimentoMedico> atendimentoMedicos;
 
     public FichaAtendimento(Paciente paciente){
         this.paciente = paciente;
