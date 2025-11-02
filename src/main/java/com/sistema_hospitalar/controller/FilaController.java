@@ -1,5 +1,6 @@
 package com.sistema_hospitalar.controller;
 
+import com.sistema_hospitalar.dto.AtendimentoMedicoDTO;
 import com.sistema_hospitalar.dto.FichaAtendimentoDTO;
 import com.sistema_hospitalar.service.AtendimentoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +29,14 @@ public class FilaController {
     @Operation(summary = "Lista pacientes aguardando triagem", description = "Retorna a lista de pacientes com status AGUARDANDO_TRIAGEM.")
     public ResponseEntity<List<FichaAtendimentoDTO>> getFilaTriagem() {
         List<FichaAtendimentoDTO> fila = atendimentoService.listarAguardandoTriagem();
+        return ResponseEntity.ok(fila);
+    }
+
+    @GetMapping("/medico")
+    @PreAuthorize("hasRole('MEDICO')")
+    @Operation(summary = "Lista pacientes aguardando médico (Priorizada)", description = "Retorna a fila de pacientes com status AGUARDANDO_MEDICO, ordenada pela prioridade da triagem (Vermelho primeiro).")
+    public ResponseEntity<List<AtendimentoMedicoDTO.FilaMedico>> getFilaMedico() {
+        List<AtendimentoMedicoDTO.FilaMedico> fila = atendimentoService.listarAguardandoMedico();
         return ResponseEntity.ok(fila);
     }
 }
