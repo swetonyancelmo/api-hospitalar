@@ -1,9 +1,6 @@
 package com.sistema_hospitalar.controller;
 
-import com.sistema_hospitalar.dto.FichaAtendimentoDTO;
-import com.sistema_hospitalar.dto.IniciarAtendimentoRequestDTO;
-import com.sistema_hospitalar.dto.TriagemResponseDTO;
-import com.sistema_hospitalar.dto.TriagemResquestDTO;
+import com.sistema_hospitalar.dto.*;
 import com.sistema_hospitalar.service.AtendimentoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -51,6 +48,21 @@ public class AtendimentoController {
             @PathVariable String fichaId,
             @RequestBody @Valid TriagemResquestDTO dto) {
         TriagemResponseDTO response = atendimentoService.registrarTriagem(fichaId, dto);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{fichaId}/avaliacao-medica")
+    @PreAuthorize("hasRole('MEDICO')")
+    @Operation(summary = "Registra a avaliação e conduta médica", description = "Usado pelo MÉDICO para registrar parecer e definir conduta (Medicação, Alta, Encaminhamento).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Avaliação registrada com sucesso"),
+            @ApiResponse(responseCode = "400", description = "Ficha não está aguardando médico ou dados inválidos (ex: medicação sem prescrição)"),
+            @ApiResponse(responseCode = "404", description = "Ficha não encontrada")
+    })
+    public ResponseEntity<AtendimentoMedicoDTO.Response> registrarAvaliacao(
+            @PathVariable String fichaId,
+            @RequestBody @Valid AtendimentoMedicoDTO.Request dto) {
+        AtendimentoMedicoDTO.Response response = atendimentoService.registrarAvaliacaoMedica(fichaId, dto);
         return ResponseEntity.ok(response);
     }
 }
