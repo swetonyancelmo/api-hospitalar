@@ -37,6 +37,9 @@ public class FichaAtendimento {
     @Column(nullable = false)
     private Boolean ativa;
 
+    @OneToOne(mappedBy = "ficha", cascade = CascadeType.ALL)
+    private Triagem triagem;
+
     public FichaAtendimento(Paciente paciente){
         this.paciente = paciente;
         this.status = StatusAtendimento.AGUARDANDO_TRIAGEM;
