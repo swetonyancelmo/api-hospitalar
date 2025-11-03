@@ -65,4 +65,17 @@ public class AtendimentoController {
         AtendimentoMedicoDTO.Response response = atendimentoService.registrarAvaliacaoMedica(fichaId, dto);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/medicacao/{prescricaoId}/administrar")
+    @PreAuthorize("hasRole('FARMACIA')")
+    @Operation(summary = "Registra a administração de um medicamento", description = "Marca uma prescrição como 'administrada'. Se for a última, move o paciente para AGUARDANDO_REAVALIACAO.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Medicamento administrado"),
+            @ApiResponse(responseCode = "400", description = "Medicamento já foi administrado"),
+            @ApiResponse(responseCode = "404", description = "Prescrição não encontrada")
+    })
+    public ResponseEntity<Void> administrarMedicacao(@PathVariable String prescricaoId) {
+        atendimentoService.administrarMedicacao(prescricaoId);
+        return ResponseEntity.ok().build();
+    }
 }
