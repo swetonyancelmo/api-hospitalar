@@ -5,10 +5,7 @@ import com.sistema_hospitalar.domain.enums.StatusAtendimento;
 import com.sistema_hospitalar.dto.*;
 import com.sistema_hospitalar.exception.BusinessRuleException;
 import com.sistema_hospitalar.exception.ResourceNotFoundException;
-import com.sistema_hospitalar.repository.AtendimentoMedicoRepository;
-import com.sistema_hospitalar.repository.FichaAtendimentoRepository;
-import com.sistema_hospitalar.repository.PacienteRepository;
-import com.sistema_hospitalar.repository.TriagemRepository;
+import com.sistema_hospitalar.repository.*;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContext;
@@ -16,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,8 +32,11 @@ public class AtendimentoService {
     @Autowired
     private AtendimentoMedicoRepository atendimentoMedicoRepository;
 
+    @Autowired
+    private PrescricaoRepository prescricaoRepository;
+
     @Transactional
-    public FichaAtendimentoDTO iniciarAtendimento(IniciarAtendimentoRequestDTO dto){
+    public FichaAtendimentoDTO iniciarAtendimento(IniciarAtendimentoRequestDTO dto) {
         Paciente paciente = pacienteRepository.findById(dto.pacienteId())
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente não encontrado com o ID: " + dto.pacienteId()));
 
@@ -60,13 +61,13 @@ public class AtendimentoService {
     }
 
     @Transactional
-    public TriagemResponseDTO registrarTriagem(String fichaId, TriagemResquestDTO dto){
+    public TriagemResponseDTO registrarTriagem(String fichaId, TriagemResquestDTO dto) {
         Usuario enfermeiro = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         FichaAtendimento ficha = fichaRepository.findById(fichaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ficha de atendimento não encontrada: " + fichaId));
 
-        if(ficha.getStatus() != StatusAtendimento.AGUARDANDO_TRIAGEM) {
+        if (ficha.getStatus() != StatusAtendimento.AGUARDANDO_TRIAGEM) {
             throw new BusinessRuleException("Esta ficha não está aguardando triagem. Status atual: " + ficha.getStatus());
         }
 
@@ -84,9 +85,14 @@ public class AtendimentoService {
     }
 
     @Transactional(readOnly = true)
-    public List<AtendimentoMedicoDTO.FilaMedico> listarAguardandoMedico(){
+    public List<AtendimentoMedicoDTO.FilaMedico> listarAguardandoMedico() {
+        List<StatusAtendimento> statusParaMedico = Arrays.asList(
+                StatusAtendimento.AGUARDANDO_MEDICO,
+                StatusAtendimento.AGUARDANDO_REAVALIACAO
+        );
+
         List<FichaAtendimento> fichas = fichaRepository
-                .findByStatusOrderByPrioridade(StatusAtendimento.AGUARDANDO_MEDICO);
+                .findByStatusInOrderByPrioridade(statusParaMedico);
 
         return fichas.stream()
                 .map(AtendimentoMedicoDTO.FilaMedico::new)
@@ -94,13 +100,14 @@ public class AtendimentoService {
     }
 
     @Transactional
-    public AtendimentoMedicoDTO.Response registrarAvaliacaoMedica(String fichaId, AtendimentoMedicoDTO.Request dto){
-        Usuario medico= (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public AtendimentoMedicoDTO.Response registrarAvaliacaoMedica(String fichaId, AtendimentoMedicoDTO.Request dto) {
+        Usuario medico = (Usuario) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         FichaAtendimento ficha = fichaRepository.findById(fichaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ficha de atendimento não encontrada: " + fichaId));
 
-        if(ficha.getStatus() != StatusAtendimento.AGUARDANDO_MEDICO){
+        if (ficha.getStatus() != StatusAtendimento.AGUARDANDO_MEDICO &&
+                ficha.getStatus() != StatusAtendimento.AGUARDANDO_REAVALIACAO) {
             throw new BusinessRuleException("Esta ficha não está aguardando atendimento médico. Status atual: " + ficha.getStatus());
         }
 
@@ -112,7 +119,7 @@ public class AtendimentoService {
 
         switch (dto.conduta()) {
             case MEDICACAO:
-                if(dto.prescricoes() == null || dto.prescricoes().isEmpty()){
+                if (dto.prescricoes() == null || dto.prescricoes().isEmpty()) {
                     throw new BusinessRuleException("Conduta de MEDICAÇÃO exige ao menos uma prescrição");
                 }
 
@@ -134,5 +141,40 @@ public class AtendimentoService {
         fichaRepository.save(ficha);
 
         return new AtendimentoMedicoDTO.Response(atendimento);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FilaMedicacaoDTO> listarAguardandoMedicacao() {
+        List<FichaAtendimento> fichas = fichaRepository
+                .findByStatusAndAtivaTrue(StatusAtendimento.EM_MEDICACAO);
+
+        return fichas.stream()
+                .filter(f -> f.getAtendimentoMedicos() != null && !f.getAtendimentoMedicos().isEmpty())
+                .map(FilaMedicacaoDTO::new)
+                .filter(dto -> !dto.prescricoesPendentes().isEmpty()) // Segurança extra
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void administrarMedicacao(String prescricaoId){
+        Prescricao prescricao = prescricaoRepository.findById(prescricaoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Prescrição não encontrada: " + prescricaoId));
+
+        if(prescricao.getAdministrado()){
+            throw new BusinessRuleException("Este medicamento já foi administrado.");
+        }
+
+        prescricao.setAdministrado(true);
+        prescricaoRepository.save(prescricao);
+
+        String atendimentoId = prescricao.getAtendimentoMedico().getId();
+        List<Prescricao> pendentes = prescricaoRepository
+                .findByAtendimentoMedicoIdAndAdministradoFalse(atendimentoId);
+
+        if (pendentes.isEmpty()) {
+            FichaAtendimento ficha = prescricao.getAtendimentoMedico().getFicha();
+            ficha.setStatus(StatusAtendimento.AGUARDANDO_REAVALIACAO);
+            fichaRepository.save(ficha);
+        }
     }
 }
