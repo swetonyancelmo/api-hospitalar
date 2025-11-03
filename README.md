@@ -67,7 +67,7 @@ O projeto foi construído seguindo uma **Arquitetura em Camadas (N-Tier)** clás
 
 A documentação completa e interativa dos endpoints está disponível via Swagger UI:
 
-**URL:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+**URL:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ---
 
@@ -116,7 +116,7 @@ Use o endpoint `POST /auth/login`.
 ### 4.4. Usando o Token no Swagger
 
 1. Copie o token gerado no login.
-2. Acesse o Swagger UI: http://localhost:8080/swagger-ui.html
+2. Acesse o Swagger UI: http://localhost:8080/swagger-ui/index.html
 3. Clique no botão "Authorize" (canto superior direito).
 4. Na janela, cole o token no campo "Value" prefixado por Bearer (ex: Bearer eyJh...s9A).
 5. Clique em "Authorize" e feche a janela.
