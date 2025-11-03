@@ -151,3 +151,8 @@ Use o endpoint `POST /auth/login`.
     - Status da Ficha: `FINALIZADO`.
     - `ativa` = `false`.
     - `dataHoraSaida` = (agora).
+
+## Autor
+**Swetony Ancelmo**
+- GitHub [Swetony Ancelmo](https://github.com/swetonyancelmo)
+- Linkedin [Swetony Ancelmo](https://www.linkedin.com/in/swetony-ancelmo)
