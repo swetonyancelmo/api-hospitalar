@@ -1,4 +1,4 @@
-# API de Atendimento Hospitalar - Teste Técnico Marques Consult
+# API de Atendimento Hospitalar
 
 API REST desenvolvida em Java 21 + Spring Boot 3 para simular o fluxo de atendimento de um hospital, contemplando 
 recepção, triagem, avaliação médica e medicação.
