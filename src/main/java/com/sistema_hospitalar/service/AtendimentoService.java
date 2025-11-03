@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -134,11 +135,11 @@ public class AtendimentoService {
             case ALTA:
             case ENCAMINHAMENTO:
                 ficha.setStatus(StatusAtendimento.ALTA);
+                this.finalizarAtendimento(fichaId, medico.getId());
                 break;
         }
 
         atendimentoMedicoRepository.save(atendimento);
-        fichaRepository.save(ficha);
 
         return new AtendimentoMedicoDTO.Response(atendimento);
     }
@@ -176,5 +177,22 @@ public class AtendimentoService {
             ficha.setStatus(StatusAtendimento.AGUARDANDO_REAVALIACAO);
             fichaRepository.save(ficha);
         }
+    }
+
+    @Transactional
+    public FichaAtendimentoDTO finalizarAtendimento(String fichaId, String usuarioId){
+        FichaAtendimento ficha = fichaRepository.findById(fichaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ficha de atendimento não encontrada: " + fichaId));
+
+        if(ficha.getStatus() != StatusAtendimento.ALTA){
+            throw new BusinessRuleException("Não é possível finalizar um atendimento que não recebeu alta médica. Status atual: " + ficha.getStatus());
+        }
+
+        ficha.setStatus(StatusAtendimento.FINALIZADO);
+        ficha.setAtiva(true);
+        ficha.setDataHoraSaida(LocalDateTime.now());
+
+        fichaRepository.save(ficha);
+        return new FichaAtendimentoDTO(ficha);
     }
 }
